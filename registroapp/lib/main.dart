@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'database/database.dart';
-import 'screens/clientes/clientes_page.dart';
+//import 'screens/clientes/clientes_page.dart';
 import 'screens/ordenes/ordenes_page.dart';
 import 'screens/ordenes/nueva_orden_dialog.dart';
 
@@ -43,7 +43,6 @@ class _InicioPageState extends State<InicioPage> {
 
   final List<String> paginas = [
     'Inicio',
-    'Clientes',
     'Ordenes',
   ];
 
@@ -222,10 +221,10 @@ class _InicioPageState extends State<InicioPage> {
         return _inicio();
 
       case 1:
-        return const ClientesPage();
-
-      case 2: 
         return const OrdenesPage();
+
+      /*case 2: 
+        return const OrdenesPage();*/
 
       default:
         return Center(
@@ -252,7 +251,7 @@ class _InicioPageState extends State<InicioPage> {
 
   if (resultado == true && mounted) {
     setState(() {
-      paginaSeleccionada = 2;
+      paginaSeleccionada = 0;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
