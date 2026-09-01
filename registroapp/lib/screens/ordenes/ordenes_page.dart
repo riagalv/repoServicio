@@ -5,7 +5,12 @@ import 'editar_orden_dialog.dart';
 import '../../services/pdf_service.dart';
 
 class OrdenesPage extends StatefulWidget {
-  const OrdenesPage({super.key});
+  final String filtroInicial;
+
+  const OrdenesPage({
+    super.key,
+    this.filtroInicial = 'Todas',
+  });
 
   @override
   State<OrdenesPage> createState() => _OrdenesPageState();
@@ -14,11 +19,46 @@ class OrdenesPage extends StatefulWidget {
 class _OrdenesPageState extends State<OrdenesPage> {
   List<Orden> ordenes = [];
   bool cargando = true;
+  late String filtroEstado;
+  final TextEditingController busquedaController = TextEditingController();
+  String busqueda = '';
 
   @override
   void initState() {
     super.initState();
+    filtroEstado = widget.filtroInicial;
     cargarOrdenes();
+  }
+
+  @override
+  void didUpdateWidget(covariant OrdenesPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.filtroInicial != widget.filtroInicial) {
+      setState(() {
+        filtroEstado = widget.filtroInicial;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    busquedaController.dispose();
+    super.dispose();
+  }
+
+  List<Orden> get ordenesFiltradas {
+    return ordenes.where((orden) {
+      final coincideEstado = filtroEstado == 'Todas' ||
+          orden.estado.toLowerCase() == filtroEstado.toLowerCase();
+
+      final texto = busqueda.trim().toLowerCase();
+      final coincideBusqueda = texto.isEmpty ||
+          orden.folio.toLowerCase().contains(texto) ||
+          (orden.equipo?.toLowerCase().contains(texto) ?? false) ||
+          (orden.problema?.toLowerCase().contains(texto) ?? false);
+
+      return coincideEstado && coincideBusqueda;
+    }).toList();
   }
 
   Future<void> editarOrden(Orden orden) async {
@@ -92,7 +132,7 @@ class _OrdenesPageState extends State<OrdenesPage> {
     if (confirmar != true) return;
 
     await DatabaseHelper.eliminarOrden(orden.id!);
-
+    //Actualizar fichas
     await cargarOrdenes();
 
     if (mounted) {
@@ -217,8 +257,64 @@ class _OrdenesPageState extends State<OrdenesPage> {
     );
   }
 
+  Widget _badgeEstado(String estado) {
+    Color colorFondo;
+    Color colorTexto;
+    IconData icono;
+
+    switch (estado) {
+      case 'Pendiente':
+        colorFondo = Colors.amber.shade100;
+        colorTexto = Colors.amber.shade900;
+        icono = Icons.schedule;
+        break;
+      case 'En proceso':
+        colorFondo = Colors.blue.shade100;
+        colorTexto = Colors.blue.shade900;
+        icono = Icons.build_outlined;
+        break;
+      case 'Finalizada':
+        colorFondo = Colors.green.shade100;
+        colorTexto = Colors.green.shade900;
+        icono = Icons.check_circle_outline;
+        break;
+      default:
+        colorFondo = Colors.grey.shade200;
+        colorTexto = Colors.grey.shade800;
+        icono = Icons.info_outline;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: colorFondo,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icono, size: 14, color: colorTexto),
+          const SizedBox(width: 4),
+          Text(
+            estado,
+            style: TextStyle(
+              color: colorTexto,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final filtradas = ordenesFiltradas;
+    final totalPendientes = ordenes.where((o) => o.estado == 'Pendiente').length;
+    final totalEnProceso = ordenes.where((o) => o.estado == 'En proceso').length;
+    final totalFinalizadas = ordenes.where((o) => o.estado == 'Finalizada').length;
+
     return Padding(
       padding: const EdgeInsets.all(30),
       child: Column(
@@ -242,7 +338,85 @@ class _OrdenesPageState extends State<OrdenesPage> {
             ),
           ),
 
-          const SizedBox(height: 25),
+          const SizedBox(height: 20),
+
+          // BARRA DE FILTROS Y BÚSQUEDA
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            alignment: WrapAlignment.spaceBetween,
+            children: [
+              SegmentedButton<String>(
+                segments: [
+                  ButtonSegment<String>(
+                    value: 'Todas',
+                    label: Text('Todas (${ordenes.length})'),
+                    icon: const Icon(Icons.all_inbox),
+                  ),
+                  ButtonSegment<String>(
+                    value: 'Pendiente',
+                    label: Text('Pendientes ($totalPendientes)'),
+                    icon: const Icon(Icons.schedule),
+                  ),
+                  ButtonSegment<String>(
+                    value: 'En proceso',
+                    label: Text('En proceso ($totalEnProceso)'),
+                    icon: const Icon(Icons.build_outlined),
+                  ),
+                  ButtonSegment<String>(
+                    value: 'Finalizada',
+                    label: Text('Finalizadas ($totalFinalizadas)'),
+                    icon: const Icon(Icons.check_circle_outline),
+                  ),
+                ],
+                selected: {filtroEstado},
+                onSelectionChanged: (Set<String> newSelection) {
+                  setState(() {
+                    filtroEstado = newSelection.first;
+                  });
+                },
+              ),
+
+              SizedBox(
+                width: 270,
+                height: 40,
+                child: TextField(
+                  controller: busquedaController,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar folio, equipo, problema...',
+                    hintStyle: const TextStyle(fontSize: 12),
+                    prefixIcon: const Icon(Icons.search, size: 18),
+                    suffixIcon: busqueda.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 16),
+                            onPressed: () {
+                              busquedaController.clear();
+                              setState(() {
+                                busqueda = '';
+                              });
+                            },
+                          )
+                        : null,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 0,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onChanged: (valor) {
+                    setState(() {
+                      busqueda = valor;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 15),
 
           Expanded(
             child: Card(
@@ -279,52 +453,118 @@ class _OrdenesPageState extends State<OrdenesPage> {
                             ],
                           ),
                         )
-                      : SingleChildScrollView(
-                          child: SizedBox(
-                            width: double.infinity,
-                            child: DataTable(
-                              columns: const [
-                                DataColumn(
-                                  label: Text('Folio'),
-                                ),
-                                DataColumn(
-                                  label: Text('Fecha'),
-                                ),
-                                DataColumn(
-                                  label: Text('Estado'),
-                                ),
-                                DataColumn(
-                                  label: Text('Acciones'),
-                                ),
-                              ],
-                              rows: ordenes.map((orden) {
-                                return DataRow(
-                                  cells: [
-                                    DataCell(
-                                      Text(orden.folio),
+                      : filtradas.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.filter_alt_off_outlined,
+                                    size: 60,
+                                    color: Colors.grey,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'No se encontraron órdenes con el filtro "$filtroEstado"${busqueda.isNotEmpty ? ' y búsqueda "$busqueda"' : ''}.',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey,
                                     ),
-                                    DataCell(
-                                      Text(orden.fecha),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  OutlinedButton.icon(
+                                    onPressed: () {
+                                      busquedaController.clear();
+                                      setState(() {
+                                        filtroEstado = 'Todas';
+                                        busqueda = '';
+                                      });
+                                    },
+                                    icon: const Icon(Icons.refresh),
+                                    label: const Text('Restablecer filtros'),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : SingleChildScrollView(
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: DataTable(
+                                  headingRowColor: WidgetStateProperty.all(
+                                    Colors.blue.shade50,
+                                  ),
+                                  columns: const [
+                                    DataColumn(
+                                      label: Text(
+                                        'Folio',
+                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                      ),
                                     ),
-                                    DataCell(
-                                      Text(orden.estado),
+                                    DataColumn(
+                                      label: Text(
+                                        'Fecha',
+                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                      ),
                                     ),
-                                    DataCell(
-                                      FilledButton(
-                                        onPressed: () {
-                                          verDetalle(orden);
-                                        },
-                                        child: const Text(
-                                          'Ver detalle',
-                                        ),
+                                    DataColumn(
+                                      label: Text(
+                                        'Equipo',
+                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                    DataColumn(
+                                      label: Text(
+                                        'Estado',
+                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                    DataColumn(
+                                      label: Text(
+                                        'Acciones',
+                                        style: TextStyle(fontWeight: FontWeight.bold),
                                       ),
                                     ),
                                   ],
-                                );
-                              }).toList(),
+                                  rows: filtradas.map((orden) {
+                                    final fechaDisplay = orden.fecha.contains('T')
+                                        ? orden.fecha.split('T').first
+                                        : orden.fecha;
+
+                                    return DataRow(
+                                      cells: [
+                                        DataCell(
+                                          Text(
+                                            orden.folio,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                        DataCell(
+                                          Text(fechaDisplay),
+                                        ),
+                                        DataCell(
+                                          Text(orden.equipo ?? '-'),
+                                        ),
+                                        DataCell(
+                                          _badgeEstado(orden.estado),
+                                        ),
+                                        DataCell(
+                                          FilledButton.tonal(
+                                            onPressed: () {
+                                              verDetalle(orden);
+                                            },
+                                            child: const Text(
+                                              'Ver detalle',
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
             ),
           ),
         ],

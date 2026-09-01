@@ -30,7 +30,7 @@ class DatabaseHelper {
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               nombre TEXT NOT NULL,
               telefono TEXT NOT NULL UNIQUE,
-              correo TEXT,
+              correo TEXT
             )
           ''');
           await db.execute('''
@@ -45,14 +45,14 @@ class DatabaseHelper {
             diagnostico TEXT,
             observaciones TEXT,
             FOREIGN KEY (cliente_id) REFERENCES clientes (id)
-             )
+          )
         ''');
         },
 
         onUpgrade: (db, oldVersion, newVersion) async { 
             if (oldVersion < 2) { 
                 await db.execute(''' 
-                CREATE TABLE ordenes ( 
+                CREATE TABLE IF NOT EXISTS ordenes ( 
                 id INTEGER PRIMARY KEY AUTOINCREMENT, 
                 folio TEXT NOT NULL UNIQUE, 
                 cliente_id INTEGER NOT NULL, 
@@ -71,6 +71,7 @@ class DatabaseHelper {
     );
   }
 
+  
   static Future<List<Map<String, dynamic>>> obtenerClientes() async {
     final db = await database;
 
@@ -105,6 +106,60 @@ class DatabaseHelper {
     );
   }
 
+  static Future<int> eliminarOrden(int id) async {
+    final db = await database;
+
+    // Buscar la orden antes de eliminarla
+    final ordenes = await db.query(
+      'ordenes',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (ordenes.isEmpty) {
+      return 0;
+    }
+
+    // Obtener el cliente asociado a la orden (compatible con cliente_id y clienteid)
+    final ordenData = ordenes.first;
+    final clienteId = ordenData['cliente_id'] ?? ordenData['clienteid'];
+
+    // Eliminar la orden
+    final resultado = await db.delete(
+      'ordenes',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    // Verificar si el cliente tiene otras órdenes asociadas
+    if (clienteId != null) {
+      List<Map<String, dynamic>> otrasOrdenes = [];
+      try {
+        otrasOrdenes = await db.query(
+          'ordenes',
+          where: 'cliente_id = ?',
+          whereArgs: [clienteId],
+        );
+      } catch (_) {
+        otrasOrdenes = await db.query(
+          'ordenes',
+          where: 'clienteid = ?',
+          whereArgs: [clienteId],
+        );
+      }
+
+      // Si ya no tiene otras órdenes, eliminar también al cliente
+      if (otrasOrdenes.isEmpty) {
+        await db.delete(
+          'clientes',
+          where: 'id = ?',
+          whereArgs: [clienteId],
+        );
+      }
+    }
+
+    return resultado;
+  }
   static Future<int> eliminarCliente(int id) async {
     final db = await database;
 
@@ -115,7 +170,7 @@ class DatabaseHelper {
     );
   }
 
-  static Future<int> eliminarOrden(int id) async {
+  /*static Future<int> eliminarOrden(int id) async {
     final db = await database;
 
     return await db.delete(
@@ -123,7 +178,7 @@ class DatabaseHelper {
       where: 'id = ?',
       whereArgs: [id],
     );
-  }
+  }*/
 
   static Future<bool> existeTelefono(
     String telefono, {
@@ -205,5 +260,38 @@ class DatabaseHelper {
       whereArgs: [id],
     );
   }
+
+  static Future<int> contarClientes() async {
+  final db = await database;
+
+  final resultado = await db.rawQuery(
+    'SELECT COUNT(*) FROM clientes',
+  );
+
+return resultado.first.values.first as int? ?? 0;
+}
+
+static Future<int> contarOrdenes() async {
+  final db = await database;
+
+  final resultado = await db.rawQuery(
+    'SELECT COUNT(*) FROM ordenes',
+  );
+
+return resultado.first.values.first as int? ?? 0;
+}
+
+static Future<int> contarOrdenesPorEstado(
+  String estado,
+) async {
+  final db = await database;
+
+  final resultado = await db.rawQuery(
+    'SELECT COUNT(*) FROM ordenes WHERE estado = ?',
+    [estado],
+  );
+
+return resultado.first.values.first as int? ?? 0;
+}
 
 }

@@ -39,7 +39,7 @@ class Orden {
     return Orden(
       id: map['id'],
       folio: map['folio'],
-      clienteId: map['cliente_id'],
+      clienteId: (map['cliente_id'] ?? map['clienteid'] ?? 0) as int,
       fecha: map['fecha'],
       equipo: map['equipo'],
       problema: map['problema'],
