@@ -44,7 +44,6 @@ class _InicioPageState extends State<InicioPage> {
 
   final List<String> paginas = [
     'Inicio',
-    'Ordenes',
   ];
 
   int totalOrdenes = 0;
@@ -139,9 +138,6 @@ class _InicioPageState extends State<InicioPage> {
                         onTap: () async {
                           setState(() {
                             paginaSeleccionada = index;
-                            if (index == 1) {
-                              filtroOrdenes = 'Todas';
-                            }
                           });
 
                           if (index == 0) {
@@ -184,8 +180,22 @@ class _InicioPageState extends State<InicioPage> {
                   ),
                   child: Row(
                     children: [
+                      if (paginaSeleccionada == 1) ...[
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back),
+                          tooltip: 'Volver al Inicio',
+                          onPressed: () async {
+                            setState(() {
+                              paginaSeleccionada = 0;
+                            });
+                            await cargarResumen();
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+
                       Text(
-                        paginas[paginaSeleccionada],
+                        paginaSeleccionada == 0 ? 'Inicio' : 'Órdenes',
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -258,8 +268,6 @@ class _InicioPageState extends State<InicioPage> {
     switch (index) {
       case 0:
         return Icons.home;
-      case 1:
-        return Icons.assignment;
       default:
         return Icons.circle;
     }
@@ -267,25 +275,14 @@ class _InicioPageState extends State<InicioPage> {
 
   Widget _crearContenido() {
     switch (paginaSeleccionada) {
-      case 0:
-        return _inicio();
-
       case 1:
         return OrdenesPage(
           filtroInicial: filtroOrdenes,
           key: ValueKey(filtroOrdenes),
         );
-
+      case 0:
       default:
-        return Center(
-          child: Text(
-            paginas[paginaSeleccionada],
-            style: const TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        );
+        return _inicio();
     }
   }
 
@@ -409,7 +406,6 @@ class _InicioPageState extends State<InicioPage> {
                     'Bienvenido',
                     style: TextStyle(
                       fontSize: 32,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   SizedBox(height: 8),
