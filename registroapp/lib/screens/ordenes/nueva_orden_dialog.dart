@@ -29,13 +29,8 @@ class _NuevaOrdenDialogState extends State<NuevaOrdenDialog> {
 
   bool guardando = false;
 
-  String generarFolio() {
-    final ahora = DateTime.now();
-
-    return 'ORD-${ahora.year}'
-        '${ahora.month.toString().padLeft(2, '0')}'
-        '${ahora.day.toString().padLeft(2, '0')}'
-        '-${ahora.millisecondsSinceEpoch}';
+  Future<String> generarFolio() async {
+    return await DatabaseHelper.generarSiguienteFolio();
   }
 
   Future<void> guardarOrden() async {
@@ -87,9 +82,11 @@ class _NuevaOrdenDialogState extends State<NuevaOrdenDialog> {
         );
       }
 
+      final folioGenerado = await DatabaseHelper.generarSiguienteFolio();
+
       // CREAR LA ORDEN
       final orden = Orden(
-        folio: generarFolio(),
+        folio: folioGenerado,
         clienteId: clienteId,
         fecha: DateTime.now().toIso8601String(),
         equipo: equipoController.text.trim().isEmpty

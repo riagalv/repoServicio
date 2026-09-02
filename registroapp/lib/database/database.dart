@@ -358,17 +358,46 @@ static Future<int> contarOrdenes() async {
 return resultado.first.values.first as int? ?? 0;
 }
 
-static Future<int> contarOrdenesPorEstado(
-  String estado,
-) async {
-  final db = await database;
+  static Future<int> contarOrdenesPorEstado(
+    String estado,
+  ) async {
+    final db = await database;
 
-  final resultado = await db.rawQuery(
-    'SELECT COUNT(*) FROM ordenes WHERE estado = ?',
-    [estado],
-  );
+    final resultado = await db.rawQuery(
+      'SELECT COUNT(*) FROM ordenes WHERE estado = ?',
+      [estado],
+    );
 
-return resultado.first.values.first as int? ?? 0;
-}
+    return resultado.first.values.first as int? ?? 0;
+  }
 
+  // Generar siguiente folio consecutivo por año (ejemplo: ORD-2026-0001)
+  static Future<String> generarSiguienteFolio() async {
+    final db = await database;
+    final anioActual = DateTime.now().year;
+    final prefijo = 'ORD-$anioActual-';
+
+    final resultado = await db.query(
+      'ordenes',
+      columns: ['folio'],
+      where: 'folio LIKE ?',
+      whereArgs: ['$prefijo%'],
+    );
+
+    int maxNumero = 0;
+    for (final fila in resultado) {
+      final folio = fila['folio'] as String?;
+      if (folio != null && folio.startsWith(prefijo)) {
+        final numeroStr = folio.substring(prefijo.length);
+        final numero = int.tryParse(numeroStr);
+        if (numero != null && numero > maxNumero) {
+          maxNumero = numero;
+        }
+      }
+    }
+
+    final siguienteNumero = maxNumero + 1;
+    final numeroFormateado = siguienteNumero.toString().padLeft(4, '0');
+    return '$prefijo$numeroFormateado';
+  }
 }
