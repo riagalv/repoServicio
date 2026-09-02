@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'database/database.dart';
+import 'models/orden.dart';
 //import 'screens/clientes/clientes_page.dart';
 import 'screens/ordenes/ordenes_page.dart';
 import 'screens/ordenes/nueva_orden_dialog.dart';
+import 'services/pdf_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -94,6 +96,143 @@ class _InicioPageState extends State<InicioPage> {
 
       cargandoResumen = false;
     });
+  }
+
+  void _mostrarFolioCreado(Orden orden) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final fechaDisplay = orden.fecha.contains('T')
+            ? orden.fecha.split('T').first
+            : orden.fecha;
+
+        return AlertDialog(
+          icon: const Icon(Icons.check_circle, color: Colors.green, size: 50),
+          title: const Text(
+            '¡Orden registrada con éxito!',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: SizedBox(
+            width: 550,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text(
+                          'FOLIO GENERADO',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blueGrey,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        SelectableText(
+                          orden.folio,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Detalles de la Orden',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const Divider(),
+                  const SizedBox(height: 6),
+                  _itemDetalleModal('Fecha:', fechaDisplay),
+                  _itemDetalleModal('Cliente:', orden.clienteNombre ?? '-'),
+                  _itemDetalleModal('Teléfono:', orden.clienteTelefono ?? '-'),
+                  if (orden.clienteCorreo != null && orden.clienteCorreo!.isNotEmpty)
+                    _itemDetalleModal('Correo:', orden.clienteCorreo!),
+                  _itemDetalleModal('Equipo:', orden.equipo ?? '-'),
+                  _itemDetalleModal('Problema:', orden.problema ?? '-'),
+                  _itemDetalleModal('Estado:', orden.estado),
+                  if (orden.diagnostico != null && orden.diagnostico!.isNotEmpty)
+                    _itemDetalleModal('Diagnóstico:', orden.diagnostico!),
+                  if (orden.observaciones != null && orden.observaciones!.isNotEmpty)
+                    _itemDetalleModal('Observaciones:', orden.observaciones!),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            OutlinedButton.icon(
+              onPressed: () async {
+                final navigator = Navigator.of(context);
+                navigator.pop();
+                final resultado = await PdfService.exportarOrden(orden);
+                if (mounted) {
+                  if (resultado == 'correcto') {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('PDF guardado correctamente')),
+                    );
+                  } else if (resultado == 'error') {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Error al generar el PDF')),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(Icons.picture_as_pdf),
+              label: const Text('Exportar a PDF'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Aceptar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _itemDetalleModal(String titulo, String valor) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 130,
+            child: Text(
+              titulo,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              valor,
+              style: const TextStyle(color: Colors.black87),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -369,7 +508,7 @@ class _InicioPageState extends State<InicioPage> {
 
   Widget _inicio() {
     Future<void> _mostrarNuevaOrden() async {
-      final resultado = await showDialog<bool>(
+      final resultado = await showDialog<dynamic>(
         context: context,
         barrierDismissible: false,
         builder: (context) {
@@ -377,18 +516,22 @@ class _InicioPageState extends State<InicioPage> {
         },
       );
 
-      if (resultado == true && mounted) {
+      if (resultado != null && mounted) {
         await cargarResumen();
 
         setState(() {
           paginaSeleccionada = 0;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Orden creada correctamente'),
-          ),
-        );
+        if (resultado is Orden) {
+          _mostrarFolioCreado(resultado);
+        } else if (resultado == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Orden creada correctamente'),
+            ),
+          );
+        }
       }
     }
 

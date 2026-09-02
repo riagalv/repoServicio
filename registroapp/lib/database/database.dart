@@ -208,10 +208,47 @@ class DatabaseHelper {
   static Future<List<Map<String, dynamic>>> obtenerOrdenes() async {
     final db = await database;
 
-    return await db.query(
-      'ordenes',
-      orderBy: 'id DESC',
-    );
+    try {
+      return await db.rawQuery('''
+        SELECT ordenes.*, 
+               clientes.nombre AS cliente_nombre, 
+               clientes.telefono AS cliente_telefono, 
+               clientes.correo AS cliente_correo
+        FROM ordenes
+        LEFT JOIN clientes ON ordenes.cliente_id = clientes.id
+        ORDER BY ordenes.id DESC
+      ''');
+    } catch (_) {
+      try {
+        return await db.rawQuery('''
+          SELECT ordenes.*, 
+                 clientes.nombre AS cliente_nombre, 
+                 clientes.telefono AS cliente_telefono, 
+                 clientes.correo AS cliente_correo
+          FROM ordenes
+          LEFT JOIN clientes ON ordenes.clienteid = clientes.id
+          ORDER BY ordenes.id DESC
+        ''');
+      } catch (_) {
+        final ordenesRaw = await db.query('ordenes', orderBy: 'id DESC');
+        final clientesRaw = await db.query('clientes');
+        final Map<int, Map<String, dynamic>> clienteMap = {
+          for (var c in clientesRaw) (c['id'] as int): c
+        };
+
+        return ordenesRaw.map((ord) {
+          final cId = (ord['cliente_id'] ?? ord['clienteid']) as int?;
+          final c = cId != null ? clienteMap[cId] : null;
+          final mut = Map<String, dynamic>.from(ord);
+          if (c != null) {
+            mut['cliente_nombre'] = c['nombre'];
+            mut['cliente_telefono'] = c['telefono'];
+            mut['cliente_correo'] = c['correo'];
+          }
+          return mut;
+        }).toList();
+      }
+    }
   }
 
   // Obtener una orden por su ID
@@ -220,18 +257,58 @@ class DatabaseHelper {
   ) async {
     final db = await database;
 
-    final resultado = await db.query(
-      'ordenes',
-      where: 'id = ?',
-      whereArgs: [id],
-      limit: 1,
-    );
+    try {
+      final resultado = await db.rawQuery('''
+        SELECT ordenes.*, 
+               clientes.nombre AS cliente_nombre, 
+               clientes.telefono AS cliente_telefono, 
+               clientes.correo AS cliente_correo
+        FROM ordenes
+        LEFT JOIN clientes ON ordenes.cliente_id = clientes.id
+        WHERE ordenes.id = ?
+        LIMIT 1
+      ''', [id]);
 
-    if (resultado.isEmpty) {
-      return null;
+      if (resultado.isNotEmpty) return resultado.first;
+    } catch (_) {
+      try {
+        final resultado = await db.rawQuery('''
+          SELECT ordenes.*, 
+                 clientes.nombre AS cliente_nombre, 
+                 clientes.telefono AS cliente_telefono, 
+                 clientes.correo AS cliente_correo
+          FROM ordenes
+          LEFT JOIN clientes ON ordenes.clienteid = clientes.id
+          WHERE ordenes.id = ?
+          LIMIT 1
+        ''', [id]);
+
+        if (resultado.isNotEmpty) return resultado.first;
+      } catch (_) {
+        final resultado = await db.query(
+          'ordenes',
+          where: 'id = ?',
+          whereArgs: [id],
+          limit: 1,
+        );
+
+        if (resultado.isEmpty) return null;
+
+        final ord = Map<String, dynamic>.from(resultado.first);
+        final cId = (ord['cliente_id'] ?? ord['clienteid']) as int?;
+        if (cId != null) {
+          final cRes = await db.query('clientes', where: 'id = ?', whereArgs: [cId], limit: 1);
+          if (cRes.isNotEmpty) {
+            ord['cliente_nombre'] = cRes.first['nombre'];
+            ord['cliente_telefono'] = cRes.first['telefono'];
+            ord['cliente_correo'] = cRes.first['correo'];
+          }
+        }
+        return ord;
+      }
     }
 
-    return resultado.first;
+    return null;
   }
 
   // Insertar una orden

@@ -107,12 +107,29 @@ class _NuevaOrdenDialogState extends State<NuevaOrdenDialog> {
             : observacionesController.text.trim(),
       );
 
-      await DatabaseHelper.insertarOrden(
+      final idOrden = await DatabaseHelper.insertarOrden(
         orden.toMap(),
       );
 
+      final ordenCreada = Orden(
+        id: idOrden,
+        folio: orden.folio,
+        clienteId: clienteId,
+        fecha: orden.fecha,
+        equipo: orden.equipo,
+        problema: orden.problema,
+        estado: orden.estado,
+        diagnostico: orden.diagnostico,
+        observaciones: orden.observaciones,
+        clienteNombre: nombreController.text.trim(),
+        clienteTelefono: telefono,
+        clienteCorreo: correoController.text.trim().isEmpty
+            ? null
+            : correoController.text.trim(),
+      );
+
       if (mounted) {
-        Navigator.pop(context, true);
+        Navigator.pop(context, ordenCreada);
       }
     } catch (e) {
       if (mounted) {

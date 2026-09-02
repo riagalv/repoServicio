@@ -45,7 +45,15 @@ class PdfService {
                   1: const pw.FlexColumnWidth(),
                 },
                 children: [
-                  _fila('Fecha', orden.fecha),
+                  _fila('Cliente', orden.clienteNombre ?? '-'),
+                  _fila('Teléfono', orden.clienteTelefono ?? '-'),
+                  _fila('Correo', orden.clienteCorreo ?? '-'),
+                  _fila(
+                    'Fecha',
+                    orden.fecha.contains('T')
+                        ? orden.fecha.split('T').first
+                        : orden.fecha,
+                  ),
                   _fila('Estado', orden.estado),
                   _fila('Equipo', orden.equipo ?? '-'),
                   _fila(

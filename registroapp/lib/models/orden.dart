@@ -8,6 +8,9 @@ class Orden {
   final String estado;
   final String? diagnostico;
   final String? observaciones;
+  final String? clienteNombre;
+  final String? clienteTelefono;
+  final String? clienteCorreo;
 
   Orden({
     this.id,
@@ -19,6 +22,9 @@ class Orden {
     required this.estado,
     this.diagnostico,
     this.observaciones,
+    this.clienteNombre,
+    this.clienteTelefono,
+    this.clienteCorreo,
   });
 
   Map<String, dynamic> toMap() {
@@ -46,6 +52,10 @@ class Orden {
       estado: map['estado'],
       diagnostico: map['diagnostico'],
       observaciones: map['observaciones'],
+      clienteNombre: map['cliente_nombre'] ?? map['nombre'],
+      clienteTelefono: map['cliente_telefono'] ?? map['telefono'],
+      clienteCorreo: map['cliente_correo'] ?? map['correo'],
     );
   }
 }
+

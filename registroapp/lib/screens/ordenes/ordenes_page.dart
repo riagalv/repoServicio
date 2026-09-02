@@ -54,8 +54,11 @@ class _OrdenesPageState extends State<OrdenesPage> {
       final texto = busqueda.trim().toLowerCase();
       final coincideBusqueda = texto.isEmpty ||
           orden.folio.toLowerCase().contains(texto) ||
+          (orden.clienteNombre?.toLowerCase().contains(texto) ?? false) ||
+          (orden.clienteTelefono?.toLowerCase().contains(texto) ?? false) ||
           (orden.equipo?.toLowerCase().contains(texto) ?? false) ||
-          (orden.problema?.toLowerCase().contains(texto) ?? false);
+          (orden.problema?.toLowerCase().contains(texto) ?? false) ||
+          (orden.diagnostico?.toLowerCase().contains(texto) ?? false);
 
       return coincideEstado && coincideBusqueda;
     }).toList();
@@ -170,68 +173,115 @@ class _OrdenesPageState extends State<OrdenesPage> {
     showDialog(
       context: context,
       builder: (context) {
+        final fechaDisplay = orden.fecha.contains('T')
+            ? orden.fecha.split('T').first
+            : orden.fecha;
+
         return AlertDialog(
-          title: Text('Orden ${orden.folio}'),
+          title: Row(
+            children: [
+              const Icon(Icons.assignment, color: Colors.blue),
+              const SizedBox(width: 10),
+              Text('Ficha de Orden: ${orden.folio}'),
+              const Spacer(),
+              _badgeEstado(orden.estado),
+            ],
+          ),
           content: SizedBox(
-            width: 500,
+            width: 600,
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _detalle('Folio', orden.folio),
-                  _detalle('Fecha', orden.fecha),
-                  _detalle('Estado', orden.estado),
+                  const Text(
+                    'Información General',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const Divider(),
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _detalle('Folio', orden.folio)),
+                      Expanded(child: _detalle('Fecha', fechaDisplay)),
+                      Expanded(child: _detalle('Estado', orden.estado)),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Datos del Cliente',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const Divider(),
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _detalle('Nombre', orden.clienteNombre ?? '-')),
+                      Expanded(child: _detalle('Teléfono', orden.clienteTelefono ?? '-')),
+                      Expanded(child: _detalle('Correo', orden.clienteCorreo ?? '-')),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Detalles del Servicio y Equipo',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const Divider(),
+                  const SizedBox(height: 6),
                   _detalle('Equipo', orden.equipo ?? '-'),
-                  _detalle('Problema', orden.problema ?? '-'),
-                  _detalle(
-                    'Diagnóstico',
-                    orden.diagnostico ?? '-',
-                  ),
-                  _detalle(
-                    'Observaciones',
-                    orden.observaciones ?? '-',
-                  ),
+                  _detalle('Problema Reportado', orden.problema ?? '-'),
+                  _detalle('Diagnóstico', orden.diagnostico ?? '-'),
+                  _detalle('Observaciones', orden.observaciones ?? '-'),
                 ],
               ),
             ),
           ),
-        actions: [
+          actions: [
             OutlinedButton.icon(
-                onPressed: () async {
+              onPressed: () async {
                 Navigator.pop(context);
-
                 await editarOrden(orden);
-            },
-            icon: const Icon(Icons.edit),
-            label: const Text('Editar'),
-        ),
-        FilledButton.icon(
-            onPressed: () async {
-            final navigator = Navigator.of(context);
-
-            navigator.pop();
-
-            await exportarPDF(orden);
-            },
-            icon: const Icon(Icons.picture_as_pdf),
-            label: const Text('Exportar a PDF'),
-        ),
-        OutlinedButton.icon(
-          onPressed: () async {
-            Navigator.pop(context);
-            await eliminarOrden(orden);
-          },
-          icon: const Icon(Icons.delete_outline),
-          label: const Text('Eliminar'),
-        ),
-
-        TextButton(
+              },
+              icon: const Icon(Icons.edit),
+              label: const Text('Editar'),
+            ),
+            FilledButton.icon(
+              onPressed: () async {
+                final navigator = Navigator.of(context);
+                navigator.pop();
+                await exportarPDF(orden);
+              },
+              icon: const Icon(Icons.picture_as_pdf),
+              label: const Text('Exportar a PDF'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () async {
+                Navigator.pop(context);
+                await eliminarOrden(orden);
+              },
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              label: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+            ),
+            TextButton(
               onPressed: () {
-                  Navigator.pop(context);
+                Navigator.pop(context);
               },
               child: const Text('Cerrar'),
-              ),
+            ),
           ],
         );
       },
@@ -240,7 +290,7 @@ class _OrdenesPageState extends State<OrdenesPage> {
 
   Widget _detalle(String titulo, String valor) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -248,10 +298,16 @@ class _OrdenesPageState extends State<OrdenesPage> {
             titulo,
             style: const TextStyle(
               fontWeight: FontWeight.bold,
+              color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(valor),
+          const SizedBox(height: 3),
+          Text(
+            valor,
+            style: const TextStyle(
+              fontSize: 14,
+            ),
+          ),
         ],
       ),
     );
@@ -384,7 +440,7 @@ class _OrdenesPageState extends State<OrdenesPage> {
                 child: TextField(
                   controller: busquedaController,
                   decoration: InputDecoration(
-                    hintText: 'Buscar folio, equipo, problema...',
+                    hintText: 'Buscar cliente, teléfono, folio...',
                     hintStyle: const TextStyle(fontSize: 12),
                     prefixIcon: const Icon(Icons.search, size: 18),
                     suffixIcon: busqueda.isNotEmpty
@@ -486,84 +542,94 @@ class _OrdenesPageState extends State<OrdenesPage> {
                                 ],
                               ),
                             )
-                          : SingleChildScrollView(
-                              child: SizedBox(
-                                width: double.infinity,
-                                child: DataTable(
-                                  headingRowColor: WidgetStateProperty.all(
-                                    Colors.blue.shade50,
-                                  ),
-                                  columns: const [
-                                    DataColumn(
-                                      label: Text(
-                                        'Folio',
-                                        style: TextStyle(fontWeight: FontWeight.bold),
+                          : LayoutBuilder(
+                              builder: (context, constraints) {
+                                return SingleChildScrollView(
+                                  scrollDirection: Axis.vertical,
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minWidth: constraints.maxWidth,
                                       ),
-                                    ),
-                                    DataColumn(
-                                      label: Text(
-                                        'Fecha',
-                                        style: TextStyle(fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                    DataColumn(
-                                      label: Text(
-                                        'Equipo',
-                                        style: TextStyle(fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                    DataColumn(
-                                      label: Text(
-                                        'Estado',
-                                        style: TextStyle(fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                    DataColumn(
-                                      label: Text(
-                                        'Acciones',
-                                        style: TextStyle(fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                  ],
-                                  rows: filtradas.map((orden) {
-                                    final fechaDisplay = orden.fecha.contains('T')
-                                        ? orden.fecha.split('T').first
-                                        : orden.fecha;
+                                      child: DataTable(
+                                        headingRowColor: WidgetStateProperty.all(
+                                          Colors.blue.shade50,
+                                        ),
+                                        columns: const [
+                                          DataColumn(
+                                            label: Text(
+                                              'Folio',
+                                              style: TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              'Fecha',
+                                              style: TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              'Equipo',
+                                              style: TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              'Estado',
+                                              style: TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              'Acciones',
+                                              style: TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ],
+                                        rows: filtradas.map((orden) {
+                                          final fechaDisplay = orden.fecha.contains('T')
+                                              ? orden.fecha.split('T').first
+                                              : orden.fecha;
 
-                                    return DataRow(
-                                      cells: [
-                                        DataCell(
-                                          Text(
-                                            orden.folio,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                        DataCell(
-                                          Text(fechaDisplay),
-                                        ),
-                                        DataCell(
-                                          Text(orden.equipo ?? '-'),
-                                        ),
-                                        DataCell(
-                                          _badgeEstado(orden.estado),
-                                        ),
-                                        DataCell(
-                                          FilledButton.tonal(
-                                            onPressed: () {
-                                              verDetalle(orden);
-                                            },
-                                            child: const Text(
-                                              'Ver detalle',
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  }).toList(),
-                                ),
-                              ),
+                                          return DataRow(
+                                            cells: [
+                                              DataCell(
+                                                Text(
+                                                  orden.folio,
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                              DataCell(
+                                                Text(fechaDisplay),
+                                              ),
+                                              DataCell(
+                                                Text(orden.equipo ?? '-'),
+                                              ),
+                                              DataCell(
+                                                _badgeEstado(orden.estado),
+                                              ),
+                                              DataCell(
+                                                FilledButton.tonal(
+                                                  onPressed: () {
+                                                    verDetalle(orden);
+                                                  },
+                                                  child: const Text(
+                                                    'Ver detalle',
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
             ),
           ),
