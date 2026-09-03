@@ -371,11 +371,14 @@ return resultado.first.values.first as int? ?? 0;
     return resultado.first.values.first as int? ?? 0;
   }
 
-  // Generar siguiente folio consecutivo por año (ejemplo: ORD-2026-0001)
-  static Future<String> generarSiguienteFolio() async {
+  // Generar siguiente folio consecutivo por fecha (ejemplo: 20260903-0001)
+  static Future<String> generarSiguienteFolio([DateTime? fecha]) async {
     final db = await database;
-    final anioActual = DateTime.now().year;
-    final prefijo = 'ORD-$anioActual-';
+    final f = fecha ?? DateTime.now();
+    final anio = f.year.toString();
+    final mes = f.month.toString().padLeft(2, '0');
+    final dia = f.day.toString().padLeft(2, '0');
+    final prefijo = '$anio$mes$dia-';
 
     final resultado = await db.query(
       'ordenes',

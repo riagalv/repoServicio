@@ -82,13 +82,14 @@ class _NuevaOrdenDialogState extends State<NuevaOrdenDialog> {
         );
       }
 
-      final folioGenerado = await DatabaseHelper.generarSiguienteFolio();
+      final ahora = DateTime.now();
+      final folioGenerado = await DatabaseHelper.generarSiguienteFolio(ahora);
 
       // CREAR LA ORDEN
       final orden = Orden(
         folio: folioGenerado,
         clienteId: clienteId,
-        fecha: DateTime.now().toIso8601String(),
+        fecha: ahora.toIso8601String(),
         equipo: equipoController.text.trim().isEmpty
             ? null
             : equipoController.text.trim(),
