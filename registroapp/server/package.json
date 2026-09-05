@@ -1,0 +1,13 @@
+{
+  "name": "registroapp-server",
+  "version": "1.0.0",
+  "description": "Servidor backend para Registro de Órdenes de Servicio Técnico",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  }
+}

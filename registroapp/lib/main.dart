@@ -4,12 +4,17 @@ import 'models/orden.dart';
 //import 'screens/clientes/clientes_page.dart';
 import 'screens/ordenes/ordenes_page.dart';
 import 'screens/ordenes/nueva_orden_dialog.dart';
+import 'screens/config/server_config_dialog.dart';
+import 'services/api_service.dart';
 import 'services/pdf_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await DatabaseHelper.database;
+  await ApiService.init();
+  if (!ApiService.isServerMode) {
+    await DatabaseHelper.database;
+  }
 
   runApp(const SistemaTecnicoApp());
 }
@@ -96,6 +101,20 @@ class _InicioPageState extends State<InicioPage> {
 
       cargandoResumen = false;
     });
+  }
+
+  Future<void> _abrirConfiguracionServidor() async {
+    final resultado = await showDialog<bool>(
+      context: context,
+      builder: (context) => const ServerConfigDialog(),
+    );
+
+    if (resultado == true && mounted) {
+      setState(() {
+        cargandoResumen = true;
+      });
+      await cargarResumen();
+    }
   }
 
   void _mostrarFolioCreado(Orden orden) {
@@ -342,6 +361,59 @@ class _InicioPageState extends State<InicioPage> {
                       ),
 
                       const Spacer(),
+
+                      // Indicador y botón de configuración del servidor
+                      InkWell(
+                        onTap: _abrirConfiguracionServidor,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: ApiService.isServerMode
+                                ? const Color(0xFFEFF6FF)
+                                : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: ApiService.isServerMode
+                                  ? const Color(0xFF3B82F6)
+                                  : Colors.grey.shade300,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                ApiService.isServerMode
+                                    ? Icons.cloud_done_rounded
+                                    : Icons.storage_rounded,
+                                size: 16,
+                                color: ApiService.isServerMode
+                                    ? const Color(0xFF2563EB)
+                                    : const Color(0xFF64748B),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                ApiService.isServerMode ? 'Servidor Remoto' : 'Modo Local',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: ApiService.isServerMode
+                                      ? const Color(0xFF1D4ED8)
+                                      : const Color(0xFF475569),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.settings,
+                                size: 14,
+                                color: Colors.grey.shade500,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 16),
 
                       const CircleAvatar(
                         child: Icon(Icons.person),

@@ -1,4 +1,5 @@
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import '../services/api_service.dart';
 
 class DatabaseHelper {
   static Database? _database;
@@ -73,6 +74,10 @@ class DatabaseHelper {
 
   
   static Future<List<Map<String, dynamic>>> obtenerClientes() async {
+    if (ApiService.isServerMode) {
+      return await ApiService.obtenerClientes();
+    }
+
     final db = await database;
 
     return await db.query(
@@ -84,6 +89,10 @@ class DatabaseHelper {
   static Future<int> insertarCliente(
     Map<String, dynamic> cliente,
   ) async {
+    if (ApiService.isServerMode) {
+      return await ApiService.insertarCliente(cliente);
+    }
+
     final db = await database;
 
     return await db.insert(
@@ -96,6 +105,10 @@ class DatabaseHelper {
     int id,
     Map<String, dynamic> cliente,
   ) async {
+    if (ApiService.isServerMode) {
+      return await ApiService.actualizarCliente(id, cliente);
+    }
+
     final db = await database;
 
     return await db.update(
@@ -107,6 +120,10 @@ class DatabaseHelper {
   }
 
   static Future<int> eliminarOrden(int id) async {
+    if (ApiService.isServerMode) {
+      return await ApiService.eliminarOrden(id);
+    }
+
     final db = await database;
 
     // Buscar la orden antes de eliminarla
@@ -161,6 +178,10 @@ class DatabaseHelper {
     return resultado;
   }
   static Future<int> eliminarCliente(int id) async {
+    if (ApiService.isServerMode) {
+      return await ApiService.eliminarCliente(id);
+    }
+
     final db = await database;
 
     return await db.delete(
@@ -184,6 +205,10 @@ class DatabaseHelper {
     String telefono, {
     int? excluirId,
   }) async {
+    if (ApiService.isServerMode) {
+      return await ApiService.existeTelefono(telefono, excluirId: excluirId);
+    }
+
     final db = await database;
 
     String where = 'telefono = ?';
@@ -206,6 +231,10 @@ class DatabaseHelper {
 
   // Obtener todas las órdenes
   static Future<List<Map<String, dynamic>>> obtenerOrdenes() async {
+    if (ApiService.isServerMode) {
+      return await ApiService.obtenerOrdenes();
+    }
+
     final db = await database;
 
     try {
@@ -255,6 +284,10 @@ class DatabaseHelper {
   static Future<Map<String, dynamic>?> obtenerOrden(
     int id,
   ) async {
+    if (ApiService.isServerMode) {
+      return await ApiService.obtenerOrden(id);
+    }
+
     final db = await database;
 
     try {
@@ -315,6 +348,10 @@ class DatabaseHelper {
   static Future<int> insertarOrden(
     Map<String, dynamic> orden,
   ) async {
+    if (ApiService.isServerMode) {
+      return await ApiService.insertarOrden(orden);
+    }
+
     final db = await database;
 
     return await db.insert(
@@ -328,6 +365,10 @@ class DatabaseHelper {
     int id,
     Map<String, dynamic> orden,
   ) async {
+    if (ApiService.isServerMode) {
+      return await ApiService.actualizarOrden(id, orden);
+    }
+
     final db = await database;
 
     return await db.update(
@@ -339,28 +380,40 @@ class DatabaseHelper {
   }
 
   static Future<int> contarClientes() async {
-  final db = await database;
+    if (ApiService.isServerMode) {
+      return await ApiService.contarClientes();
+    }
 
-  final resultado = await db.rawQuery(
-    'SELECT COUNT(*) FROM clientes',
-  );
+    final db = await database;
 
-return resultado.first.values.first as int? ?? 0;
-}
+    final resultado = await db.rawQuery(
+      'SELECT COUNT(*) FROM clientes',
+    );
 
-static Future<int> contarOrdenes() async {
-  final db = await database;
+    return resultado.first.values.first as int? ?? 0;
+  }
 
-  final resultado = await db.rawQuery(
-    'SELECT COUNT(*) FROM ordenes',
-  );
+  static Future<int> contarOrdenes() async {
+    if (ApiService.isServerMode) {
+      return await ApiService.contarOrdenes();
+    }
 
-return resultado.first.values.first as int? ?? 0;
-}
+    final db = await database;
+
+    final resultado = await db.rawQuery(
+      'SELECT COUNT(*) FROM ordenes',
+    );
+
+    return resultado.first.values.first as int? ?? 0;
+  }
 
   static Future<int> contarOrdenesPorEstado(
     String estado,
   ) async {
+    if (ApiService.isServerMode) {
+      return await ApiService.contarOrdenesPorEstado(estado);
+    }
+
     final db = await database;
 
     final resultado = await db.rawQuery(
@@ -373,6 +426,10 @@ return resultado.first.values.first as int? ?? 0;
 
   // Generar siguiente folio consecutivo por fecha (ejemplo: 20260903-0001)
   static Future<String> generarSiguienteFolio([DateTime? fecha]) async {
+    if (ApiService.isServerMode) {
+      return await ApiService.generarSiguienteFolio(fecha);
+    }
+
     final db = await database;
     final f = fecha ?? DateTime.now();
     final anio = f.year.toString();
