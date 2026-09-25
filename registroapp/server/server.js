@@ -34,7 +34,7 @@ function openDb() {
     try {
       instance.exec('PRAGMA journal_mode = WAL;');
       instance.exec('PRAGMA foreign_keys = ON;');
-    } catch (_) {}
+    } catch (_) { }
     return instance;
   } catch (_) {
     const Database = require('better-sqlite3');
@@ -42,7 +42,7 @@ function openDb() {
     try {
       instance.exec('PRAGMA journal_mode = WAL;');
       instance.exec('PRAGMA foreign_keys = ON;');
-    } catch (_) {}
+    } catch (_) { }
     return instance;
   }
 }
@@ -90,7 +90,7 @@ app.get('/', (req, res) => {
   try {
     totalOrdenes = db.prepare('SELECT COUNT(*) AS count FROM ordenes').get().count;
     totalClientes = db.prepare('SELECT COUNT(*) AS count FROM clientes').get().count;
-  } catch (_) {}
+  } catch (_) { }
 
   res.send(`<!DOCTYPE html>
 <html lang="es">
@@ -121,7 +121,6 @@ app.get('/', (req, res) => {
 </head>
 <body>
   <div class="card">
-    <div class="icon">🔧</div>
     <h1>Servidor de Servicio Técnico</h1>
     <div class="status"><div class="dot"></div> EN LÍNEA</div>
     <div class="stats">
@@ -465,7 +464,7 @@ app.get('/api/db/export', (req, res) => {
     }
 
     // Forzar un WAL checkpoint para que todos los datos queden en el .db principal
-    try { db.exec('PRAGMA wal_checkpoint(TRUNCATE);'); } catch (_) {}
+    try { db.exec('PRAGMA wal_checkpoint(TRUNCATE);'); } catch (_) { }
 
     const fileName = `registroapp_backup_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16)}.db`;
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
@@ -486,8 +485,8 @@ app.post('/api/db/import', upload.single('database'), (req, res) => {
     }
 
     // 1. Hacer checkpoint y cerrar la base de datos actual
-    try { db.exec('PRAGMA wal_checkpoint(TRUNCATE);'); } catch (_) {}
-    try { db.close(); } catch (_) {}
+    try { db.exec('PRAGMA wal_checkpoint(TRUNCATE);'); } catch (_) { }
+    try { db.close(); } catch (_) { }
 
     // 2. Crear respaldo automático del .db actual
     if (fs.existsSync(dbPath)) {
@@ -510,12 +509,12 @@ app.post('/api/db/import', upload.single('database'), (req, res) => {
       // Si falla, restaurar el respaldo
       if (fs.existsSync(dbBackupPath)) {
         fs.copyFileSync(dbBackupPath, dbPath);
-        try { db = openDb(); } catch (_) {}
+        try { db = openDb(); } catch (_) { }
       }
       return res.status(500).json({ error: 'No se pudo abrir la base importada: ' + err.message });
     }
 
-    console.log('✅ Base de datos importada y reconectada correctamente.');
+    console.log('Base de datos importada y reconectada correctamente.');
     res.json({ ok: true, message: 'Base de datos importada correctamente' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -527,10 +526,10 @@ app.post('/api/db/import', upload.single('database'), (req, res) => {
 // ==========================================
 app.listen(PORT, '0.0.0.0', () => {
   console.log('====================================================');
-  console.log(`🚀 SERVIDOR DE SERVICIO TÉCNICO INICIADO`);
-  console.log(`📡 Puerto: ${PORT}`);
-  console.log(`💾 Base de datos: ${dbPath}`);
-  console.log(`🌐 Acceso local: http://localhost:${PORT}`);
-  console.log(`📱 En tu red local: http://<IP_DE_ESTA_PC>:${PORT}`);
+  console.log(`SERVIDOR DE SERVICIO TÉCNICO INICIADO`);
+  console.log(`Puerto: ${PORT}`);
+  console.log(`Base de datos: ${dbPath}`);
+  console.log(`Acceso local: http://localhost:${PORT}`);
+  console.log(`En tu red local: http://<IP_DE_ESTA_PC>:${PORT}`);
   console.log('====================================================');
 });

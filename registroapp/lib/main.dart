@@ -125,14 +125,14 @@ class _InicioPageState extends State<InicioPage> {
     if (resultado == 'correcto') {
       messenger.showSnackBar(
         const SnackBar(
-          content: Text('✅ Base de datos exportada correctamente'),
+          content: Text('Base de datos exportada correctamente'),
           backgroundColor: Color(0xFF15803D),
         ),
       );
     } else if (resultado != 'cancelado') {
       messenger.showSnackBar(
         SnackBar(
-          content: Text('❌ Error al exportar: $resultado'),
+          content: Text('Error al exportar: $resultado'),
           backgroundColor: Colors.red.shade700,
         ),
       );
@@ -178,14 +178,14 @@ class _InicioPageState extends State<InicioPage> {
       await cargarResumen();
       messenger.showSnackBar(
         const SnackBar(
-          content: Text('✅ Base de datos cargada. Los datos han sido actualizados.'),
+          content: Text('Base de datos cargada. Los datos han sido actualizados.'),
           backgroundColor: Color(0xFF15803D),
         ),
       );
     } else if (resultado != 'cancelado') {
       messenger.showSnackBar(
         SnackBar(
-          content: Text('❌ Error al cargar: $resultado'),
+          content: Text('Error al cargar: $resultado'),
           backgroundColor: Colors.red.shade700,
         ),
       );
