@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,27 +18,43 @@ if (!fs.existsSync(dbDir)) {
 }
 
 const dbPath = path.join(dbDir, 'registroapp.db');
+const dbBackupPath = dbPath + '.bak';
 
-// Inicializar SQLite nativo de Node.js (Node 22+) o compatible
-let db;
-try {
-  const { DatabaseSync } = require('node:sqlite');
-  db = new DatabaseSync(dbPath);
-} catch (err) {
+// Si el archivo .db fue borrado pero existe un respaldo, restaurarlo automáticamente
+if (!fs.existsSync(dbPath) && fs.existsSync(dbBackupPath)) {
+  fs.copyFileSync(dbBackupPath, dbPath);
+  console.log('🔄 Base de datos restaurada automáticamente desde el respaldo (.bak)');
+}
+
+// ── Helper: abrir (o reabrir) la conexión SQLite ──────────────────────────
+function openDb() {
   try {
+    const { DatabaseSync } = require('node:sqlite');
+    const instance = new DatabaseSync(dbPath);
+    try {
+      instance.exec('PRAGMA journal_mode = WAL;');
+      instance.exec('PRAGMA foreign_keys = ON;');
+    } catch (_) {}
+    return instance;
+  } catch (_) {
     const Database = require('better-sqlite3');
-    db = new Database(dbPath);
-  } catch (err2) {
-    console.error('Error al inicializar SQLite:', err.message);
-    process.exit(1);
+    const instance = new Database(dbPath);
+    try {
+      instance.exec('PRAGMA journal_mode = WAL;');
+      instance.exec('PRAGMA foreign_keys = ON;');
+    } catch (_) {}
+    return instance;
   }
 }
 
-// Configurar pragmas
+// Inicializar SQLite
+let db;
 try {
-  db.exec('PRAGMA journal_mode = WAL;');
-  db.exec('PRAGMA foreign_keys = ON;');
-} catch (_) {}
+  db = openDb();
+} catch (err) {
+  console.error('Error al inicializar SQLite:', err.message);
+  process.exit(1);
+}
 
 // Crear tablas si no existen
 db.exec(`
@@ -431,6 +448,75 @@ app.delete('/api/ordenes/:id', (req, res) => {
     }
 
     res.json({ changes: Number(result.changes) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// 4. ENDPOINTS DE BASE DE DATOS (EXPORT / IMPORT)
+// ==========================================
+
+// GET /api/db/export  → descarga el archivo .db actual (con checkpoint WAL primero)
+app.get('/api/db/export', (req, res) => {
+  try {
+    if (!fs.existsSync(dbPath)) {
+      return res.status(404).json({ error: 'Archivo de base de datos no encontrado' });
+    }
+
+    // Forzar un WAL checkpoint para que todos los datos queden en el .db principal
+    try { db.exec('PRAGMA wal_checkpoint(TRUNCATE);'); } catch (_) {}
+
+    const fileName = `registroapp_backup_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16)}.db`;
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.sendFile(dbPath);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/db/import  → reemplaza el archivo .db con el que se envía
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
+
+app.post('/api/db/import', upload.single('database'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se recibió ningún archivo' });
+    }
+
+    // 1. Hacer checkpoint y cerrar la base de datos actual
+    try { db.exec('PRAGMA wal_checkpoint(TRUNCATE);'); } catch (_) {}
+    try { db.close(); } catch (_) {}
+
+    // 2. Crear respaldo automático del .db actual
+    if (fs.existsSync(dbPath)) {
+      fs.copyFileSync(dbPath, dbBackupPath);
+    }
+
+    // 3. Eliminar archivos WAL y SHM residuales para evitar corrupción
+    const walPath = dbPath + '-wal';
+    const shmPath = dbPath + '-shm';
+    if (fs.existsSync(walPath)) fs.unlinkSync(walPath);
+    if (fs.existsSync(shmPath)) fs.unlinkSync(shmPath);
+
+    // 4. Escribir el nuevo archivo .db
+    fs.writeFileSync(dbPath, req.file.buffer);
+
+    // 5. Reabrir la base de datos con el helper
+    try {
+      db = openDb();
+    } catch (err) {
+      // Si falla, restaurar el respaldo
+      if (fs.existsSync(dbBackupPath)) {
+        fs.copyFileSync(dbBackupPath, dbPath);
+        try { db = openDb(); } catch (_) {}
+      }
+      return res.status(500).json({ error: 'No se pudo abrir la base importada: ' + err.message });
+    }
+
+    console.log('✅ Base de datos importada y reconectada correctamente.');
+    res.json({ ok: true, message: 'Base de datos importada correctamente' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

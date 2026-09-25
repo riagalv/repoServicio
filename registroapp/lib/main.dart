@@ -7,6 +7,7 @@ import 'screens/ordenes/nueva_orden_dialog.dart';
 import 'screens/config/server_config_dialog.dart';
 import 'services/api_service.dart';
 import 'services/pdf_service.dart';
+import 'services/database_backup_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -114,6 +115,80 @@ class _InicioPageState extends State<InicioPage> {
         cargandoResumen = true;
       });
       await cargarResumen();
+    }
+  }
+
+  Future<void> _exportarBD() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final resultado = await DatabaseBackupService.exportarBaseDeDatos();
+    if (!mounted) return;
+    if (resultado == 'correcto') {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('✅ Base de datos exportada correctamente'),
+          backgroundColor: Color(0xFF15803D),
+        ),
+      );
+    } else if (resultado != 'cancelado') {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('❌ Error al exportar: $resultado'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    }
+  }
+
+  Future<void> _importarBD() async {
+    // Pedir confirmación antes de reemplazar la base de datos
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 40),
+        title: const Text('Cargar base de datos', textAlign: TextAlign.center),
+        content: const Text(
+          'Esto reemplazará TODOS los datos actuales con los del archivo seleccionado.\n\n'
+          '¿Deseas continuar? Se creará un respaldo automático antes de reemplazar.',
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.orange.shade700),
+            child: const Text('Sí, cargar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final resultado = await DatabaseBackupService.importarBaseDeDatos();
+    if (!mounted) return;
+
+    if (resultado == 'correcto') {
+      setState(() {
+        cargandoResumen = true;
+      });
+      await cargarResumen();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('✅ Base de datos cargada. Los datos han sido actualizados.'),
+          backgroundColor: Color(0xFF15803D),
+        ),
+      );
+    } else if (resultado != 'cancelado') {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('❌ Error al cargar: $resultado'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
     }
   }
 
@@ -361,6 +436,32 @@ class _InicioPageState extends State<InicioPage> {
                       ),
 
                       const Spacer(),
+
+                      // Botón exportar base de datos
+                      Tooltip(
+                        message: 'Exportar / Descargar base de datos',
+                        child: IconButton(
+                          onPressed: _exportarBD,
+                          icon: const Icon(Icons.download_rounded),
+                          color: Colors.grey.shade600,
+                          hoverColor: Colors.blue.shade50,
+                          tooltip: 'Exportar base de datos',
+                        ),
+                      ),
+
+                      // Botón importar base de datos
+                      Tooltip(
+                        message: 'Cargar / Importar base de datos',
+                        child: IconButton(
+                          onPressed: _importarBD,
+                          icon: const Icon(Icons.upload_rounded),
+                          color: Colors.grey.shade600,
+                          hoverColor: Colors.orange.shade50,
+                          tooltip: 'Cargar base de datos',
+                        ),
+                      ),
+
+                      const SizedBox(width: 4),
 
                       // Indicador y botón de configuración del servidor
                       InkWell(
