@@ -258,8 +258,6 @@ class _InicioPageState extends State<InicioPage> {
                   _itemDetalleModal('Fecha:', fechaDisplay),
                   _itemDetalleModal('Cliente:', orden.clienteNombre ?? '-'),
                   _itemDetalleModal('Teléfono:', orden.clienteTelefono ?? '-'),
-                  if (orden.clienteCorreo != null && orden.clienteCorreo!.isNotEmpty)
-                    _itemDetalleModal('Correo:', orden.clienteCorreo!),
                   _itemDetalleModal('Equipo:', orden.equipo ?? '-'),
                   _itemDetalleModal('Problema:', orden.problema ?? '-'),
                   _itemDetalleModal('Estado:', orden.estado),

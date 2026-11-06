@@ -30,8 +30,7 @@ class DatabaseHelper {
             CREATE TABLE clientes (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               nombre TEXT NOT NULL,
-              telefono TEXT NOT NULL UNIQUE,
-              correo TEXT
+              telefono TEXT NOT NULL UNIQUE
             )
           ''');
           await db.execute('''
@@ -241,8 +240,7 @@ class DatabaseHelper {
       return await db.rawQuery('''
         SELECT ordenes.*, 
                clientes.nombre AS cliente_nombre, 
-               clientes.telefono AS cliente_telefono, 
-               clientes.correo AS cliente_correo
+               clientes.telefono AS cliente_telefono
         FROM ordenes
         LEFT JOIN clientes ON ordenes.cliente_id = clientes.id
         ORDER BY ordenes.id DESC
@@ -252,8 +250,7 @@ class DatabaseHelper {
         return await db.rawQuery('''
           SELECT ordenes.*, 
                  clientes.nombre AS cliente_nombre, 
-                 clientes.telefono AS cliente_telefono, 
-                 clientes.correo AS cliente_correo
+                 clientes.telefono AS cliente_telefono
           FROM ordenes
           LEFT JOIN clientes ON ordenes.clienteid = clientes.id
           ORDER BY ordenes.id DESC
@@ -272,7 +269,6 @@ class DatabaseHelper {
           if (c != null) {
             mut['cliente_nombre'] = c['nombre'];
             mut['cliente_telefono'] = c['telefono'];
-            mut['cliente_correo'] = c['correo'];
           }
           return mut;
         }).toList();
@@ -294,8 +290,7 @@ class DatabaseHelper {
       final resultado = await db.rawQuery('''
         SELECT ordenes.*, 
                clientes.nombre AS cliente_nombre, 
-               clientes.telefono AS cliente_telefono, 
-               clientes.correo AS cliente_correo
+               clientes.telefono AS cliente_telefono
         FROM ordenes
         LEFT JOIN clientes ON ordenes.cliente_id = clientes.id
         WHERE ordenes.id = ?
@@ -308,8 +303,7 @@ class DatabaseHelper {
         final resultado = await db.rawQuery('''
           SELECT ordenes.*, 
                  clientes.nombre AS cliente_nombre, 
-                 clientes.telefono AS cliente_telefono, 
-                 clientes.correo AS cliente_correo
+                 clientes.telefono AS cliente_telefono
           FROM ordenes
           LEFT JOIN clientes ON ordenes.clienteid = clientes.id
           WHERE ordenes.id = ?
@@ -334,7 +328,6 @@ class DatabaseHelper {
           if (cRes.isNotEmpty) {
             ord['cliente_nombre'] = cRes.first['nombre'];
             ord['cliente_telefono'] = cRes.first['telefono'];
-            ord['cliente_correo'] = cRes.first['correo'];
           }
         }
         return ord;

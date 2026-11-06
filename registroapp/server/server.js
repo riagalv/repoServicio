@@ -216,8 +216,8 @@ app.post('/api/clientes', (req, res) => {
       return res.status(400).json({ error: 'Nombre y teléfono son obligatorios' });
     }
 
-    const stmt = db.prepare('INSERT INTO clientes (nombre, telefono, correo) VALUES (?, ?, ?)');
-    const result = stmt.run(nombre, telefono, correo || null);
+    const stmt = db.prepare('INSERT INTO clientes (nombre, telefono) VALUES (?, ?)');
+    const result = stmt.run(nombre, telefono);
 
     res.status(201).json({ id: Number(result.lastInsertRowid) });
   } catch (error) {
@@ -233,8 +233,8 @@ app.put('/api/clientes/:id', (req, res) => {
     const { id } = req.params;
     const { nombre, telefono, correo } = req.body;
 
-    const stmt = db.prepare('UPDATE clientes SET nombre = ?, telefono = ?, correo = ? WHERE id = ?');
-    const result = stmt.run(nombre, telefono, correo || null, Number(id));
+    const stmt = db.prepare('UPDATE clientes SET nombre = ?, telefono = ? WHERE id = ?');
+    const result = stmt.run(nombre, telefono, Number(id));
 
     res.json({ changes: Number(result.changes) });
   } catch (error) {

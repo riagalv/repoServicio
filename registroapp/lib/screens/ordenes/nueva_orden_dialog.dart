@@ -17,7 +17,6 @@ class _NuevaOrdenDialogState extends State<NuevaOrdenDialog> {
   // DATOS DEL CLIENTE
   final nombreController = TextEditingController();
   final telefonoController = TextEditingController();
-  final correoController = TextEditingController();
 
   // DATOS DEL SERVICIO
   final equipoController = TextEditingController();
@@ -72,9 +71,6 @@ class _NuevaOrdenDialogState extends State<NuevaOrdenDialog> {
         final nuevoCliente = Cliente(
           nombre: nombreController.text.trim(),
           telefono: telefono,
-          correo: correoController.text.trim().isEmpty
-              ? null
-              : correoController.text.trim(),
         );
 
         clienteId = await DatabaseHelper.insertarCliente(
@@ -121,9 +117,6 @@ class _NuevaOrdenDialogState extends State<NuevaOrdenDialog> {
         observaciones: orden.observaciones,
         clienteNombre: nombreController.text.trim(),
         clienteTelefono: telefono,
-        clienteCorreo: correoController.text.trim().isEmpty
-            ? null
-            : correoController.text.trim(),
       );
 
       if (mounted) {
@@ -150,7 +143,6 @@ class _NuevaOrdenDialogState extends State<NuevaOrdenDialog> {
   void dispose() {
     nombreController.dispose();
     telefonoController.dispose();
-    correoController.dispose();
     equipoController.dispose();
     problemaController.dispose();
     diagnosticoController.dispose();
@@ -218,18 +210,6 @@ class _NuevaOrdenDialogState extends State<NuevaOrdenDialog> {
                     }
                     return null;
                   },
-                ),
-
-                const SizedBox(height: 15),
-
-                TextFormField(
-                  controller: correoController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Correo electrónico',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
-                  ),
                 ),
 
                 const SizedBox(height: 25),

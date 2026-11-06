@@ -47,7 +47,6 @@ class PdfService {
                 children: [
                   _fila('Cliente', orden.clienteNombre ?? '-'),
                   _fila('Teléfono', orden.clienteTelefono ?? '-'),
-                  _fila('Correo', orden.clienteCorreo ?? '-'),
                   _fila(
                     'Fecha',
                     orden.fecha.contains('T')

@@ -228,7 +228,6 @@ class _OrdenesPageState extends State<OrdenesPage> {
                     children: [
                       Expanded(child: _detalle('Nombre', orden.clienteNombre ?? '-')),
                       Expanded(child: _detalle('Teléfono', orden.clienteTelefono ?? '-')),
-                      Expanded(child: _detalle('Correo', orden.clienteCorreo ?? '-')),
                     ],
                   ),
                   const SizedBox(height: 14),

@@ -164,8 +164,7 @@ class _ClientesPageState extends State<ClientesPage> {
                           child: SizedBox(
                             width: double.infinity,
                             child: DataTable(
-                              headingRowColor:
-                                  WidgetStateProperty.all(
+                              headingRowColor: WidgetStateProperty.all(
                                 Colors.blue.shade50,
                               ),
                               columns: const [
@@ -174,12 +173,6 @@ class _ClientesPageState extends State<ClientesPage> {
                                 ),
                                 DataColumn(
                                   label: Text('Teléfono'),
-                                ),
-                                DataColumn(
-                                  label: Text('Correo'),
-                                ),
-                                DataColumn(
-                                  label: Text('Dirección'),
                                 ),
                                 DataColumn(
                                   label: Text('Acciones'),
@@ -195,21 +188,11 @@ class _ClientesPageState extends State<ClientesPage> {
                                       Text(cliente.telefono),
                                     ),
                                     DataCell(
-                                      Text(
-                                        cliente.correo?.isNotEmpty == true
-                                            ? cliente.correo!
-                                            : '-',
-                                      ),
-                                    ),
-                                  
-                                    DataCell(
                                       Row(
                                         children: [
                                           IconButton(
                                             tooltip: 'Editar',
-                                            icon: const Icon(
-                                              Icons.edit,
-                                            ),
+                                            icon: const Icon(Icons.edit),
                                             onPressed: () {
                                               mostrarFormulario(
                                                 cliente: cliente,
@@ -218,9 +201,7 @@ class _ClientesPageState extends State<ClientesPage> {
                                           ),
                                           IconButton(
                                             tooltip: 'Eliminar',
-                                            icon: const Icon(
-                                              Icons.delete,
-                                            ),
+                                            icon: const Icon(Icons.delete),
                                             onPressed: () {
                                               eliminarCliente(cliente);
                                             },
@@ -261,8 +242,6 @@ class _FormularioClienteDialogState
 
   late final TextEditingController nombreController;
   late final TextEditingController telefonoController;
-  late final TextEditingController correoController;
- 
 
   bool guardando = false;
 
@@ -279,18 +258,12 @@ class _FormularioClienteDialogState
     telefonoController = TextEditingController(
       text: widget.cliente?.telefono ?? '',
     );
-
-    correoController = TextEditingController(
-      text: widget.cliente?.correo ?? '',
-    );
-
   }
 
   @override
   void dispose() {
     nombreController.dispose();
     telefonoController.dispose();
-    correoController.dispose();
     super.dispose();
   }
 
@@ -305,8 +278,6 @@ class _FormularioClienteDialogState
 
     final nombre = nombreController.text.trim();
     final telefono = telefonoController.text.trim();
-    final correo = correoController.text.trim();
-
 
     final telefonoExiste = await DatabaseHelper.existeTelefono(
       telefono,
@@ -335,8 +306,6 @@ class _FormularioClienteDialogState
       id: widget.cliente?.id,
       nombre: nombre,
       telefono: telefono,
-      correo: correo.isEmpty ? null : correo,
-
     );
 
     if (editando) {
@@ -377,8 +346,7 @@ class _FormularioClienteDialogState
                     prefixIcon: Icon(Icons.person),
                   ),
                   validator: (value) {
-                    if (value == null ||
-                        value.trim().isEmpty) {
+                    if (value == null || value.trim().isEmpty) {
                       return 'El nombre es obligatorio';
                     }
                     return null;
@@ -395,25 +363,12 @@ class _FormularioClienteDialogState
                     prefixIcon: Icon(Icons.phone),
                   ),
                   validator: (value) {
-                    if (value == null ||
-                        value.trim().isEmpty) {
+                    if (value == null || value.trim().isEmpty) {
                       return 'El teléfono es obligatorio';
                     }
                     return null;
                   },
                 ),
-
-                const SizedBox(height: 15),
-
-                TextFormField(
-                  controller: correoController,
-                  decoration: const InputDecoration(
-                    labelText: 'Correo',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                ),
-
               ],
             ),
           ),
@@ -445,6 +400,3 @@ class _FormularioClienteDialogState
     );
   }
 }
-//problematica
-//antecedentes
-//justifucacion
